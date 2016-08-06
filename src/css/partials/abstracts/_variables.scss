@@ -1,0 +1,81 @@
+/*
+  Project variables
+  =================
+*/
+
+
+/*
+  Flex Sass grid generator variables
+  ==================================
+
+  [flex-sass-grid-generator](https://github.com/Enkil/flex-sass-grid-generator)
+
+*/
+
+$base-font-size:              16;
+$grid-columns:                12 !default;
+$grid-gutter-width:           1.25rem !default; // 20px
+
+$screen-xs:                   0; // Extra small screen / phone
+$screen-sm:                   480px; // Small screen / phone
+$screen-md:                   768px; // Medium screen / tablet
+$screen-lg:                   992px; // Large screen / desktop
+$screen-xl:                   1280px; // Extra large screen / wide desktop
+$screen-xxl:                  1890px; // Super large screen / extra wide desktop
+
+$grid-breakpoints: (
+        xs:                   0,
+        sm:                   540px,
+        md:                   800px,
+        lg:                   1024px,
+        xl:                   1280px,
+        xxl:                  1900px
+) !default;
+
+
+$container-max-widths: (
+        sm:                   480px,
+        md:                   768px,
+        lg:                   992px,
+        xl:                   1280px,
+        xxl:                  1890px
+) !default;
+
+/*
+  Sass MQ variables
+  =================
+
+  [sass-mq](https://github.com/sass-mq/sass-mq)
+*/
+
+$mq-breakpoints: (
+        xs:                   0px,
+        sm:                   540px,
+        md:                   800px,
+        lg:                   1024px,
+        xl:                   1280px,
+        xxl:                  1900px
+
+) !default;
+
+
+/*
+  Colors
+  ======
+*/
+
+$main-blue: #0086ff;
+$main-blue_hover: #31b1ff;
+$green: #00b05e;
+$green-2: #00b753;
+$black: #333;
+$grey: #f9f9f9;
+$grey-2: #ebebeb;
+$grey-3: #acacac;
+$grey-4: #808080;
+$grey-5: #e8e8e8;
+$grey-6: #919191;
+$grey-7: #828282;
+$grey-8: #b3b3b3;
+$grey-9: #f7f7f7;
+$red: #e74c3c;

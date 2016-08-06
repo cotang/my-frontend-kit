@@ -1,0 +1,115 @@
+/*
+SCSS variables are information about icon's compiled state, stored under its original file name
+
+.icon-home {
+  width: map-get($icon-home, 'width');
+}
+
+At the bottom of this section, we provide information about the spritesheet itself
+*/
+$s-arrow-2: (
+  name: 's-arrow-2',
+  x: 0px,
+  y: 0px,
+  offset-x: 0px,
+  offset-y: 0px,
+  width: 600px,
+  height: 1053px,
+  total-width: 833px,
+  total-height: 1053px,
+  image: 'client/dist/img/sprite/png-sprite.png'
+);
+$s-default-avatar: (
+  name: 's-default-avatar',
+  x: 601px,
+  y: 0px,
+  offset-x: -601px,
+  offset-y: 0px,
+  width: 232px,
+  height: 232px,
+  total-width: 833px,
+  total-height: 1053px,
+  image: 'client/dist/img/sprite/png-sprite.png'
+);
+$s-flag: (
+  name: 's-flag',
+  x: 601px,
+  y: 233px,
+  offset-x: -601px,
+  offset-y: -233px,
+  width: 95px,
+  height: 104px,
+  total-width: 833px,
+  total-height: 1053px,
+  image: 'client/dist/img/sprite/png-sprite.png'
+);
+$spritesheet: (
+  width: 833px,
+  height: 1053px,
+  image: 'client/dist/img/sprite/png-sprite.png',
+  sprites: ($s-arrow-2, $s-default-avatar, $s-flag, )
+);
+
+/*
+The provided mixins are intended to be used with variables directly
+
+.icon-home {
+  @include sprite-width($icon-home);
+}
+
+.icon-email {
+  @include sprite($icon-email);
+}
+
+Example usage in HTML:
+
+`display: block` sprite:
+<div class="icon-home"></div>
+
+To change `display` (e.g. `display: inline-block;`), we suggest using a common CSS class:
+
+// CSS
+.icon {
+  display: inline-block;
+}
+
+// HTML
+<i class="icon icon-home"></i>
+*/
+@mixin sprite-width($sprite) {
+  width: map-get($sprite, 'width');
+}
+
+@mixin sprite-height($sprite) {
+  height: map-get($sprite, 'height');
+}
+
+@mixin sprite-position($sprite) {
+  background-position: map-get($sprite, 'offset-x') map-get($sprite, 'offset-y');
+}
+
+@mixin sprite-image($sprite) {
+  background-image: url(map-get($sprite, 'image'));
+}
+
+@mixin sprite($sprite) {
+  @include sprite-image($sprite);
+  @include sprite-position($sprite);
+  @include sprite-width($sprite);
+  @include sprite-height($sprite);
+}
+
+/*
+The `sprites` mixin generates identical output to the CSS template
+  but can be overridden inside of SCSS
+
+@include sprites(map-get($spritesheet, 'sprites'));
+*/
+@mixin sprites($sprites) {
+  @each $sprite in $sprites {
+    $sprite-name: map-get($sprite, 'name');
+    .#{$sprite-name} {
+      @include sprite($sprite);
+    }
+  }
+}

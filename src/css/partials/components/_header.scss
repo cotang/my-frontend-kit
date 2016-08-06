@@ -1,0 +1,9 @@
+body{
+    background-color: $grey-3;
+}
+h1{
+    color: $red;
+    font-size: $base-font-size;
+    display: flex;
+    white-space: nowrap;
+}
