@@ -21,8 +21,8 @@ const jpegoptim = require('imagemin-jpegoptim');
 const spritesmith = require('gulp.spritesmith');
 const newer = require('gulp-newer');
 const notify = require('gulp-notify');
-const browserSync = require('browser-sync').create();
-const serve = require('browser-sync');
+const runSequence =  require('run-sequence');
+const browserSync = require('browser-sync');
 const reload = browserSync.reload;
 
 // Paths
@@ -58,19 +58,19 @@ var path = {
 
 // Compilation pug
 gulp.task('pug', function() {
-  gulp.src(path.src.html)
+  return gulp.src(path.src.html)
     .pipe(plumber())
     .pipe(pug({
       pretty: true
     }))
     .pipe(gulp.dest(path.build.html))
-    .pipe(browserSync.reload({stream: true}));
+    .pipe(reload({stream: true}));
 })
 
 // Compilation sass
 gulp.task('sass', function () {
-  gulp.src(path.src.css)
-    .pipe(sourcemaps.init())
+  return gulp.src(path.src.css)
+//    .pipe(sourcemaps.init())
     .pipe(plumber())
     .pipe(sass())
     .pipe(postcss([
@@ -78,27 +78,27 @@ gulp.task('sass', function () {
       mqpacker
     ]))
     .pipe(cleancss())
-    .pipe(sourcemaps.write())
+//    .pipe(sourcemaps.write())
     .pipe(rename('style.min.css'))
     .pipe(gulp.dest(path.build.css))
-    .pipe(browserSync.reload({stream: true}));
+    .pipe(reload({stream: true}));
 });
 
 // Compilation js
 gulp.task('js', function() {
-  gulp.src(path.src.js)
-    .pipe(sourcemaps.init())
+  return gulp.src(path.src.js)
+//    .pipe(sourcemaps.init())
     .pipe(plumber())
     .pipe(concat('script.min.js'))
     .pipe(uglify())
-    .pipe(sourcemaps.write())
+//    .pipe(sourcemaps.write())
     .pipe(gulp.dest(path.build.js))
-    .pipe(browserSync.reload({stream: true}));
+    .pipe(reload({stream: true}));
 });
 
 // Optimization images
 gulp.task('img', function () {
-  gulp.src(path.src.img)
+  return gulp.src(path.src.img)
     .pipe(newer(path.build.img))
     .pipe(imagemin({
       progressive: true,
@@ -107,76 +107,42 @@ gulp.task('img', function () {
       interlaced: true
     }))
     .pipe(gulp.dest(path.build.img))
-    .pipe(browserSync.reload({stream: true}));
+    .pipe(reload({stream: true}));
 });
 
 // Creation sprites
 gulp.task('sprites', function () {
   var spriteData =
-    gulp.src(path.src.sprites) //выберем откуда брать изображения для объединения в спрайт
+    gulp.src(path.src.sprites)
       .pipe(spritesmith({
-        imgName: 'sprite.png', //имя спрайтового изображения
-        cssName: '_sprite.scss', //имя стиля где храним позиции изображений в спрайте
-        imgPath: '../img/sprite.png', //путь где лежит спрайт
-        cssFormat: 'scss', //формат в котором обрабатываем позиции
+        imgName: 'sprite.png',
+        cssName: '_sprite.scss',
+        imgPath: '../img/sprite.png',
+        cssFormat: 'scss',
         cssVarMap: function(sprite) {
-          sprite.name = 's-' + sprite.name //имя каждого спрайта будет состоять из имени файла и конструкции 's-' в начале имени
+          sprite.name = 's-' + sprite.name
         }
       }));
-  spriteData.img.pipe(gulp.dest(path.build.sprites)); // путь, куда сохраняем картинку
-  spriteData.css.pipe(gulp.dest(path.build.spritesCss)); // путь, куда сохраняем стили
+  spriteData.img.pipe(gulp.dest(path.build.sprites));
+  spriteData.css.pipe(gulp.dest(path.build.spritesCss));
 });
 
 
 // Copying fonts
 gulp.task('fonts', function() {
-  gulp.src(path.src.fonts)
+  return gulp.src(path.src.fonts)
     .pipe(gulp.dest(path.build.fonts))
-});
-
-// Overall build
-gulp.task('build', [
-  'pug',
-  'sass',
-  'js',
-  // 'sprites',    
-  'img',
-  'fonts'
-]);
-
-// Overall watch
-gulp.task('watch', function(){
-  gulp.watch([path.watch.html], function(event, cb) {
-    gulp.start('pug');
-  });
-  gulp.watch([path.watch.css], function(event, cb) {
-    gulp.start('sass');
-  });
-  gulp.watch([path.watch.js], function(event, cb) {
-    gulp.start('js');
-  });
-  gulp.watch([path.watch.img], function(event, cb) {
-    gulp.start('img');
-  });
-  // gulp.watch([path.watch.sprites], function(event, cb) {
-  //   gulp.start('sprites');
-  // });
-  gulp.watch([path.watch.fonts], function(event, cb) {
-    gulp.start('fonts');
-  });
 });
 
 // Clean
 gulp.task('clean', function () {
-  del(path.clean);
+  return del(path.clean);
 });
 
-// Deploy on github.io
-gulp.task('deploy', function() {
-  gulp.src('path.build')
-//  gulp.src('./build/**/*')
-    .pipe(ghPages());
-});
+// Overall build
+gulp.task('build', function (cb) {
+  runSequence('clean', ['pug', 'sprites', 'img', 'sass', 'js', 'fonts'], cb);
+});     
 
 
 //Server config
@@ -189,23 +155,40 @@ var config = {
   port: 9000
 };
 // Browser sync
-gulp.task('serve', function() {
-  serve(config);
+gulp.task('browserSync', ['build'], function() {
+  browserSync(config);
 });
 
+// Overall watch
+gulp.task('watch', ['browserSync'], function(){
+  gulp.watch([path.watch.html], function(event, cb) {
+    gulp.start('pug');
+  });
+  gulp.watch([path.watch.css], function(event, cb) {
+    gulp.start('sass');
+  });
+  gulp.watch([path.watch.js], function(event, cb) {
+    gulp.start('js');
+  });
+  gulp.watch([path.watch.img], function(event, cb) {
+    gulp.start('img');
+  });
+  gulp.watch([path.watch.sprites], function(event, cb) {
+    gulp.start('sprites');
+  });
+  gulp.watch([path.watch.fonts], function(event, cb) {
+    gulp.start('fonts');
+  });
+});
 
-gulp.task('default', ['clean', 'build', 'serve', 'watch']);
+// Deploy on github.io
+gulp.task('deploy', function() {
+  gulp.src('path.build')
+//  gulp.src('./build/**/*')
+    .pipe(ghPages());
+});
+
+// Default task
+gulp.task('default', ['watch']);
 
 
-
-
-// // запуск браузерсинка + компилятора sass
-// gulp.task('serve', ['sass'], function(){
-//   browserSync.init({
-//     server: "./src"
-//     });
-//   //следим за файлами, выполняем задачу sass
-//   gulp.watch('src/sass/**/*.sass', ['sass']);
-//   gulp.watch('src/js/**/*.js').on('change', browserSync.reload);
-//   gulp.watch('src/*.html').on('change', browserSync.reload);
-// });
