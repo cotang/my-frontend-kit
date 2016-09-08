@@ -18,8 +18,8 @@
 
   @include font-face('Roboto-Regular', roboto, regular, roboto-regular-webfont);
 */
-@mixin font-face($font-family, $font-group, $font-style, $file-name) {
-  $file-path: "../fonts/" + $font-group + "/" + $font-style + "/" + $file-name;
+@mixin font-face($font-family, $font-group, $file-name) {
+  $file-path: "../fonts/" + $font-group + "/" + $file-name;
   @font-face {
     font-family: $font-family;
     src: url('#{$file-path}.eot'),local($font-family);

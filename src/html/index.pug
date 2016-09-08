@@ -1,25 +1,25 @@
-doctype html
-html(lang="en")
-  head
-    title= pageTitle
-    link(rel='stylesheet', href='css/style.min.css')
-    script(type='text/javascript').
-      if (foo) {
-         bar(1 + 5)
-      }
-  body
-    h1 Jade - node template engine
-    #container.col
-      if youAreUsingJade
-        p You are amazing
-      else
-        p Get on it! 123
-      p.
-        Jade is a terse and simple
-        templating language with a
-        strong focus on performance
-        and powerful features.
-      div.s-form-rooms
-      div.s-form-square
-      div.s-form-wifi
-    script(src='js/script.min.js')
+extends partials/templates/template.pug
+
+block content
+  +b.SECTION.page--front-page.container
+    // Content
+    +b.SECTION.content
+      +e.form 
+        +e.H3.form-title 
+          span Заказать сертификат
+        include partials/components/form--application.pug
+      +e.content__text            
+        +e.H1.content__title Оперативная сертификация
+        p С 1999 года сертификационный центр «Мостест» оказывает помощь в оформлении разнообразной разрешительной документации в области сертификации товаров и услуг. За 12 лет успешной работы были оформлены множество сертификатов и заключений, получен огромный опыт в области сертификации и сформирована команда специалистов.
+        p На сегодняшний день сертификационный центр «Мостест» является полноправным филиалом органа по сертификации, аккредитованного в нескольких системах. Он представляет собой многопрофильный центр сертификации, имеющий широкие связи с различными государственными организациями.
+    // Offer
+    include partials/components/offer.pug
+    // Statistics
+    include partials/components/statistics.pug
+    // Branches         
+    include partials/components/branches.pug
+    // Gratitude   
+    include partials/components/gratitude.pug
+    // Clients
+    include partials/components/clients.pug
+

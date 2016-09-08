@@ -1,29 +1,49 @@
 'use strict';
 
+// Set Env
+process.env.NODE_ENV = 'development';
+// process.env.NODE_ENV = 'production';
+
+// Check ENV
+global.devBuild = process.env.NODE_ENV !== 'production';
+
+// common
 const gulp = require('gulp');
 const del = require('del');
-const sass = require('gulp-sass');
-const concat = require('gulp-concat');
 const plumber = require('gulp-plumber');
-const rename = require('gulp-rename');
-const postcss = require('gulp-postcss');
-const autoprefixer = require('autoprefixer');
-const mqpacker = require('css-mqpacker');
-const cleancss = require('gulp-cleancss');
+const gutil = require('gulp-util');
 const sourcemaps = require('gulp-sourcemaps');
-const pug = require('gulp-pug');
-const uglify = require('gulp-uglify');
-const ghPages = require('gulp-gh-pages');
-const gulpIf = require('gulp-if');
-const imagemin = require('gulp-imagemin');
-const pngquant = require('imagemin-pngquant');
-const jpegoptim = require('imagemin-jpegoptim');
-const spritesmith = require('gulp.spritesmith');
-const newer = require('gulp-newer');
+const gulpif = require('gulp-if');
 const notify = require('gulp-notify');
 const runSequence =  require('run-sequence');
 const browserSync = require('browser-sync');
 const reload = browserSync.reload;
+const changed = require('gulp-changed');
+// pug
+const pug = require('gulp-pug');
+const cached = require('gulp-cached');
+const pugInheritance = require('gulp-pug-inheritance');
+const prettify = require('gulp-prettify');
+// sass
+const sass = require('gulp-sass');
+const postcss = require('gulp-postcss');
+const autoprefixer = require('autoprefixer');
+const mqpacker = require('css-mqpacker');
+const cleancss = require('gulp-cleancss');
+const rename = require('gulp-rename');
+// js
+const browserify = require('browserify');
+const glob = require('glob');
+const source = require('vinyl-source-stream');
+const buffer = require('vinyl-buffer');
+const uglify = require('gulp-uglify');
+const concat = require('gulp-concat');
+// img
+const imagemin = require('gulp-imagemin');
+// png-sprite
+const spritesmith = require('gulp.spritesmith');
+// deploy
+const ghPages = require('gulp-gh-pages');
 
 // Paths
 var path = {
@@ -33,16 +53,19 @@ var path = {
     css: 'build/css/',
     img: 'build/img/',
     fonts: 'build/fonts/',
-    sprites: 'src/img/',
-    spritesCss: 'src/css/partials/'
+    pngSprites: 'src/img/',
+    pngSpritesCss: 'src/css/partials/abstracts/',
+    deploy: 'build/**/*'
   },
   src: {
     html: './src/html/*.pug',
+    htmlDir: './src/html',
     js: 'src/js/*.js',
     css: './src/css/*.scss',
-    img: 'src/img/*.*',
+    img: ['src/img/**/**.*', '!src/img/png-sprite/*.*'],
     fonts: 'src/fonts/**/*.*',
-    sprites: 'src/img/sprite-png/*.png'
+    pngSprites: 'src/img/png-sprite/*.png',
+    browserify: 'src/js/*.js'
   },
   watch: {
     html: 'src/html/**/*.pug',
@@ -50,19 +73,25 @@ var path = {
     css: 'src/css/**/*.scss',
     img: 'src/img/*.*',
     fonts: 'src/fonts/**/*.*',
-    sprites: 'src/img/sprite-png/*.png'
+    pngSprites: 'src/img/png-sprite/*.png'
   },
   clean: './build'
 };
 
-
 // Compilation pug
 gulp.task('pug', function() {
   return gulp.src(path.src.html)
-    .pipe(plumber())
-    .pipe(pug({
-      pretty: true
+    // .pipe(gulpif(devBuild, changed(path.build.html, {extension: '.html'})))
+    // .pipe(gulpif(global.isWatching, cached('pug')))
+    // .pipe(pugInheritance({basedir: path.src.htmlDir}))
+    .pipe(plumber(function(error) {
+        gutil.log(gutil.colors.red(error.message));
+        this.emit('end');
     }))
+    .pipe(pug())
+    .pipe(prettify({
+      indent_size: 2
+    }))    
     .pipe(gulp.dest(path.build.html))
     .pipe(reload({stream: true}));
 })
@@ -71,12 +100,16 @@ gulp.task('pug', function() {
 gulp.task('sass', function () {
   return gulp.src(path.src.css)
 //    .pipe(sourcemaps.init())
-    .pipe(plumber())
+    .pipe(plumber(function(error) {
+        gutil.log(gutil.colors.red(error.message));
+        this.emit('end');
+    }))
     .pipe(sass())
     .pipe(postcss([
       autoprefixer({browsers: ['last 3 version']}),
       mqpacker
     ]))
+    .pipe(gulp.dest(path.build.css))    
     .pipe(cleancss())
 //    .pipe(sourcemaps.write())
     .pipe(rename('style.min.css'))
@@ -84,47 +117,63 @@ gulp.task('sass', function () {
     .pipe(reload({stream: true}));
 });
 
-// Compilation js
+// Compilation js v1
 gulp.task('js', function() {
-  return gulp.src(path.src.js)
-//    .pipe(sourcemaps.init())
-    .pipe(plumber())
-    .pipe(concat('script.min.js'))
+  var jsFiles = glob.sync(path.src.browserify);
+  return browserify({
+      entries: jsFiles,
+      extensions: ['.jsx']
+    })
+    .bundle()  
+    .pipe(plumber(function(error) {
+        gutil.log(gutil.colors.red(error.message));
+        this.emit('end');
+    }))
+    .pipe(source('script.js'))
+    .pipe(gulp.dest(path.build.js))
+    .pipe(buffer())
     .pipe(uglify())
-//    .pipe(sourcemaps.write())
+    .pipe(rename('script.min.js'))    
     .pipe(gulp.dest(path.build.js))
     .pipe(reload({stream: true}));
 });
 
+// Compilation js v2 
+// (If jquery is used from 3rd party, and you need to exclude it from script.min.js, you should manually put all required .js files into path.src.js directory)
+// gulp.task('js', function() {
+//   return gulp.src(path.src.js)
+//     .pipe(concat('script.min.js'))
+//     .pipe(uglify())
+//     .pipe(gulp.dest(path.build.js))
+//     .pipe(reload({stream: true}));
+// });
+
 // Optimization images
 gulp.task('img', function () {
   return gulp.src(path.src.img)
-    .pipe(newer(path.build.img))
-    .pipe(imagemin({
-      progressive: true,
-      svgoPlugins: [{removeViewBox: false}],
-      use: [pngquant(),jpegoptim({max: 95})],
-      interlaced: true
-    }))
+    .pipe(gulpif(devBuild, changed(path.build.img)))
+    .pipe(gulpif(!devBuild, imagemin()))
     .pipe(gulp.dest(path.build.img))
     .pipe(reload({stream: true}));
 });
 
-// Creation sprites
-gulp.task('sprites', function () {
+// Creation png-sprites
+gulp.task('png-sprites', function () {
   var spriteData =
-    gulp.src(path.src.sprites)
+    gulp.src(path.src.pngSprites)
       .pipe(spritesmith({
-        imgName: 'sprite.png',
-        cssName: '_sprite.scss',
-        imgPath: '../img/sprite.png',
+        imgName: 'png-sprite.png',
+        imgPath: '../img/png-sprite.png',
+        cssFormat: 'scss_maps',
+        algorithm: 'binary-tree',
+        cssName: '_png-sprite.scss',
         cssFormat: 'scss',
         cssVarMap: function(sprite) {
           sprite.name = 's-' + sprite.name
         }
       }));
-  spriteData.img.pipe(gulp.dest(path.build.sprites));
-  spriteData.css.pipe(gulp.dest(path.build.spritesCss));
+  spriteData.img.pipe(gulp.dest(path.build.pngSprites));
+  spriteData.css.pipe(gulp.dest(path.build.pngSpritesCss));
 });
 
 
@@ -141,7 +190,7 @@ gulp.task('clean', function () {
 
 // Overall build
 gulp.task('build', function (cb) {
-  runSequence('clean', ['pug', 'sprites', 'img', 'sass', 'js', 'fonts'], cb);
+  runSequence('clean', ['pug', 'png-sprites', 'img', 'sass', 'js', 'fonts'], cb);
 });     
 
 
@@ -173,8 +222,8 @@ gulp.task('watch', ['browserSync'], function(){
   gulp.watch([path.watch.img], function(event, cb) {
     gulp.start('img');
   });
-  gulp.watch([path.watch.sprites], function(event, cb) {
-    gulp.start('sprites');
+  gulp.watch([path.watch.pngSprites], function(event, cb) {
+    gulp.start('png-sprites');
   });
   gulp.watch([path.watch.fonts], function(event, cb) {
     gulp.start('fonts');
@@ -183,8 +232,7 @@ gulp.task('watch', ['browserSync'], function(){
 
 // Deploy on github.io
 gulp.task('deploy', function() {
-  gulp.src('path.build')
-//  gulp.src('./build/**/*')
+  return gulp.src(path.build.deploy)
     .pipe(ghPages());
 });
 
